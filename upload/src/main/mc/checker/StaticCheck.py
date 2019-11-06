@@ -6,6 +6,7 @@ from AST import *
 from Visitor import *
 from Utils import Utils
 from StaticError import *
+from functools import reduce
 
 class MType:
     def __init__(self,partype,rettype):
@@ -13,9 +14,10 @@ class MType:
         self.rettype = rettype
 
 class Symbol:
-    def __init__(self,name,mtype,value = None):
+    def __init__(self,name,mtype,kind = None, value = None):
         self.name = name
         self.mtype = mtype
+        self.kind = kind
         self.value = value
 
 class StaticChecker(BaseVisitor,Utils):
@@ -46,29 +48,149 @@ class StaticChecker(BaseVisitor,Utils):
 
     def convertToSymbol(self, decl):
         if type(decl) == VarDecl:
-            return Symbol(decl.variable, decl.VarType)
+            if type(decl.varType) == ArrayType:
+                return Symbol(decl.variable, [decl.varType.eleType, decl.varType.dimen], Variable())
+            elif type(decl.varType) == ArrayPointerType:
+                return Symbol(decl.variable, [decl.varType.eleType], Variable())
+            else:
+                return Symbol(decl.variable, decl.varType, Variable())
         elif type(decl) == FuncDecl:
-            return Symbol(decl.name.name, MType([x.VarType for x in decl.param],decl.ReturnType))
+            if type(decl.returnType) == ArrayPointerType:
+                return Symbol(decl.name.name, MType([x.varType for x in decl.param],[decl.returnType.eleType]), Function())
+            return Symbol(decl.name.name, MType([x.varType for x in decl.param],decl.returnType), Function())
 
-    def toLstSymbol(self, lstDecl, lstSym, kind, lstGlobal=None, lstFunc=None):
+    def getGlobal(self, lstDecl, lstGlobal, c):
         for x in lstDecl:
             sym = self.convertToSymbol(x)
-            res = self.lookup(sym.name, lstSym, lambda x: x.name)
-            res1 = None
-            if
+            res = self.lookup(sym.name, c, lambda x: x.name)
+            if res is None:
+                res1 = self.lookup(sym.name, lstGlobal, lambda x: x.name)
+                if res1 is None:
+                    lstGlobal.insert(0, sym)
+                elif type(sym.mtype) == MType:
+                    raise Redeclared(Function(), sym.name)
+                else:
+                    raise Redeclared(Variable(), sym.name)
+            else:
+                if type(sym.mtype) == MType:
+                    raise Redeclared(Function(), sym.name)
+                else:
+                    raise Redeclared(Variable(), sym.name)
+
+
+    def checkEntryPoint(self, lstFunc):
+        if self.lookup("main", lstFunc, lambda x: x.name) is None:
+            raise NoEntryPoint()
 
     def visitProgram(self,ast, c): 
         #return [self.visit(x,c) for x in ast.decl]
         lstFunc = []
-        lstGlobal = []
-        self.toLstSymbol(ast.decl, lstGlobal, None, c, lstFunc)
-
-
+        lstenvi = [[]]
+        self.getGlobal(ast.decl, lstenvi[0], c)
+        self.checkEntryPoint(lstenvi[0])
+        lstenvi[0] += c
+        lstenvi.insert(0,[])
+        for x in ast.decl:
+            if isinstance(x, FuncDecl):
+                lstenvi = self.visit(x, lstenvi)
+        
+    def visitVarDecl(self, ast, c):
+        if self.lookup(ast.variable, c[0][0], lambda x: x.name):
+            if isinstance(c[1], Parameter):
+                raise Redeclared(Parameter(), ast.variable)
+            else:
+                raise Redeclared(Variable(), ast.variable)
+        c[0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable()))
+        
     def visitFuncDecl(self,ast, c): 
-        return list(map(lambda x: self.visit(x,(c,True)),ast.body.member)) 
-    
+        for x in ast.param:
+            self.visit(x, (c, Parameter()))
+        self.visit(ast.body, c)
 
-    def visitCallExpr(self, ast, c): 
+    def visitBlock(self, ast, c):
+        for x in ast.member:
+            if isinstance(x, Block):
+                self.visit(x, [[]] + c)
+            elif isinstance(x, Decl):
+                self.visit(x,(c, Variable()))
+            else:
+                self.visit(x, c)
+
+    def visitID(self, ast, c):
+        IsDecl = False
+        for envi in c:
+            if self.lookup(ast.name, envi, lambda x: x.name):
+                IsDecl = True
+                break
+        if IsDecl is False:
+            raise Undeclared(Identifier(), ast.name)
+
+    def visitCallExpr(self, ast, c):
+        IsDecl = False
+        for envi in c:
+            if self.lookup(ast.name.name, envi, lambda x: x.name):
+                IsDecl = True
+                break
+        if IsDecl is False:
+            raise Undeclared(Function(), ast.name.name)
+    
+    def visitIf(self, ast, c):
+        self.visit(ast.expr, c)
+        self.visit(ast.ThenStmt, c)
+        self.vsit(ast.ElseStmt, c)
+
+    def visitFor(self, ast, c):
+        self.visit(ast.expr1, c)
+        self.visit(ast.expr2, c)
+        self.visit(ast.expr3, c)
+        self.visit(ast.loop, c)
+
+    def visitDowhile(self, ast, c):
+        for x in ast.sl:
+            self.visit(x, c)
+        self.visit(ast.exp, c)
+
+    def visitBreak(self, ast, c):
+        return Break()
+
+    def visitContinue(self, ast, c):
+        return Continue()
+
+    def visitReturn(self, ast, c):
+        return self.visit(ast.exp, c)
+
+    def visitArrayType(self, ast, c):
+        return [ast.eleType, ast.dimen]
+
+    def visitArrayPointerType(self, ast, c):
+        return [ast.eleType]
+
+    def visitStringType(self, ast, c):
+        return StringType()
+    
+    def visitIntType(self, ast, c):
+        return IntType()
+
+    def visitFloatType(self, ast, c):
+        return FloatType()
+    
+    def visitBoolType(self, ast, c):
+        return BoolType()
+    
+    def visitIntLiteral(self,ast, c): 
+        return ast.value
+    
+    def visitFloatLiteral(self, ast, c):
+        return ast.value
+
+    def visitStringLiteral(self, ast, c):
+        return ast.value
+
+    def visitBooleanLiteral(self, ast, c):
+        return ast.value
+
+    
+    """def visitCallExpr(self, ast, c): 
         at = [self.visit(x,(c[0],False)) for x in ast.param]
         
         res = self.lookup(ast.method.name,c[0],lambda x: x.name)
@@ -80,9 +202,7 @@ class StaticChecker(BaseVisitor,Utils):
             else:
                 raise TypeMismatchInExpression(ast)
         else:
-            return res.mtype.rettype
+            return res.mtype.rettype"""
 
-    def visitIntLiteral(self,ast, c): 
-        return IntType()
+
     
-
