@@ -89,10 +89,10 @@ class StaticChecker(BaseVisitor,Utils):
         self.getGlobal(ast.decl, lstenvi[0], c)
         self.checkEntryPoint(lstenvi[0])
         lstenvi[0] += c
-        lstenvi.insert(0,[])
+        
         for x in ast.decl:
             if isinstance(x, FuncDecl):
-                lstenvi = self.visit(x, lstenvi)
+                self.visit(x, [[]] + lstenvi)
         
     def visitVarDecl(self, ast, c):
         if self.lookup(ast.variable, c[0][0], lambda x: x.name):

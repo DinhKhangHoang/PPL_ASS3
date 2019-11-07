@@ -365,9 +365,12 @@ class CheckSuite(unittest.TestCase):
 
     def test_Undeclare_030(self):
         input = """int a, b;
+        
         void main(){
             a = 1;
             a =a + 1;
+            int b;
+            b = -2
             b - 1;
             int c[9];
             for(a = 0; a < 10; a = a + 1){
@@ -379,7 +382,8 @@ class CheckSuite(unittest.TestCase):
                    add(a, b);
                 }
             }
-        }"""
+        }
+        """
         expect = "Undeclared Function: add"
         self.assertTrue(TestChecker.test(input, expect, 430))
 
