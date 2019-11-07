@@ -89,10 +89,10 @@ class StaticChecker(BaseVisitor,Utils):
         self.getGlobal(ast.decl, lstenvi[0], c)
         self.checkEntryPoint(lstenvi[0])
         lstenvi[0] += c
-        lstenvi.insert(0,[])
+        
         for x in ast.decl:
             if isinstance(x, FuncDecl):
-                lstenvi = self.visit(x, lstenvi)
+                self.visit(x, [[]] + lstenvi)
         
     def visitVarDecl(self, ast, c):
         if self.lookup(ast.variable, c[0][0], lambda x: x.name):
@@ -116,7 +116,7 @@ class StaticChecker(BaseVisitor,Utils):
             else:
                 self.visit(x, c)
 
-    def visitID(self, ast, c):
+    def visitId(self, ast, c):
         IsDecl = False
         for envi in c:
             if self.lookup(ast.name, envi, lambda x: x.name):
@@ -127,17 +127,29 @@ class StaticChecker(BaseVisitor,Utils):
 
     def visitCallExpr(self, ast, c):
         IsDecl = False
-        for envi in c:
-            if self.lookup(ast.name.name, envi, lambda x: x.name):
-                IsDecl = True
-                break
+        
+        if self.lookup(ast.method.name, c[-1], lambda x: x.name):
+            IsDecl = True
+                
         if IsDecl is False:
-            raise Undeclared(Function(), ast.name.name)
+            raise Undeclared(Function(), ast.method.name)
     
+    def visitArrayCell(self, ast, c):
+        self.visit(ast.arr, c)
+        self.visit(ast.idx, c)
+
+    def visitBinaryOp(self, ast, c):
+        self.visit(ast.left, c)
+        self.visit(ast.right, c)
+
+    def visitUnaryOp(self, ast, c):
+        self.visit(ast.body, c)
+
     def visitIf(self, ast, c):
         self.visit(ast.expr, c)
-        self.visit(ast.ThenStmt, c)
-        self.vsit(ast.ElseStmt, c)
+        self.visit(ast.thenStmt, c)
+        if ast.elseStmt is not None:
+            self.visit(ast.elseStmt, c)
 
     def visitFor(self, ast, c):
         self.visit(ast.expr1, c)
@@ -157,7 +169,8 @@ class StaticChecker(BaseVisitor,Utils):
         return Continue()
 
     def visitReturn(self, ast, c):
-        return self.visit(ast.exp, c)
+        if ast.exp is not None:
+            self.visit(ast.exp, c)
 
     def visitArrayType(self, ast, c):
         return [ast.eleType, ast.dimen]

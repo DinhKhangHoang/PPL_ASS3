@@ -227,5 +227,167 @@ class CheckSuite(unittest.TestCase):
         expect = "No Entry Point"
         self.assertTrue(TestChecker.test(input,expect,420))
 
+    def test_Undeclare_021(self):
+        input = """void main(){
+            a =a + 1;
+        }"""
+        expect = "Undeclared Identifier: a"
+        self.assertTrue(TestChecker.test(input, expect, 421))
     
+    def test_Undeclare_022(self):
+        input = """int a;
+        void main(int b){
+            a = a + 1;
+            b = 0;
+            b - 1;
+        }"""
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 422))
+
+    def test_Undeclare_023(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b = 0;
+            b - 1;
+            c[8];
+        }"""
+        expect = "Undeclared Identifier: c"
+        self.assertTrue(TestChecker.test(input, expect, 423))
+
+    def test_Undeclare_024(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            {
+                c[2] = 7;
+                c[2] = c[2] + 1;
+            }
+        }"""
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 424))
+
+    def test_Undeclare_025(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            if(true){
+                c[2] = 7;
+                c[2] = c[2] + 1;
+            }
+            else{
+                d = true;
+            }
+        }"""
+        expect = "Undeclared Identifier: d"
+        self.assertTrue(TestChecker.test(input, expect, 425))
+
+    def test_Undeclare_026(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            if(true){
+                c[2] = 7;
+                c[2] = c[2] + 1;
+            }
+            else{
+                boolean d;
+                d = true;
+                putIntLn(100);
+            }
+        }"""
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 426))
+
+    def test_Undeclare_027(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            for(a = 0; a < 10; a = a + 1){
+                if (true){
+                    d = 10;
+                }
+            }
+        }"""
+        expect = "Undeclared Identifier: d"
+        self.assertTrue(TestChecker.test(input, expect, 427))
+
+    def test_Undeclare_028(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            for(a = 0; a < 10; a = a + 1){
+                if (true){
+                   do{
+                       d = 1;
+                   }while(false);
+                }
+            }
+        }"""
+        expect = "Undeclared Identifier: d"
+        self.assertTrue(TestChecker.test(input, expect, 428))
+
+    def test_Undeclare_029(self):
+        input = """int a, b;
+        void main(){
+            a = 1;
+            a =a + 1;
+            b - 1;
+            int c[9];
+            for(a = 0; a < 10; a = a + 1){
+                int d;
+                if (true){
+                   do{
+                       d = 1;
+                   }while(false);
+                   (-e + b)*a/a;
+                }
+            }
+        }"""
+        expect = "Undeclared Identifier: e"
+        self.assertTrue(TestChecker.test(input, expect, 429))
+
+    def test_Undeclare_030(self):
+        input = """int a, b;
+        
+        void main(){
+            a = 1;
+            a =a + 1;
+            int b;
+            b = -2
+            b - 1;
+            int c[9];
+            for(a = 0; a < 10; a = a + 1){
+                int d;
+                if (true){
+                   do{
+                       d = 1;
+                   }while(false);
+                   add(a, b);
+                }
+            }
+        }
+        """
+        expect = "Undeclared Function: add"
+        self.assertTrue(TestChecker.test(input, expect, 430))
+
+    
+    
+
     
