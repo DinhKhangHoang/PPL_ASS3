@@ -59,7 +59,7 @@ class StaticChecker(BaseVisitor,Utils):
                 return Symbol(decl.name.name, MType([x.varType for x in decl.param],[decl.returnType.eleType]), Function())
             return Symbol(decl.name.name, MType([x.varType for x in decl.param],decl.returnType), Function())
 
-    def getGlobal(self, lstDecl, lstGlobal, c):
+    def getGlobal(self, lstDecl, lstGlobal, c, lstFunc):
         for x in lstDecl:
             sym = self.convertToSymbol(x)
             res = self.lookup(sym.name, c, lambda x: x.name)
@@ -67,6 +67,8 @@ class StaticChecker(BaseVisitor,Utils):
                 res1 = self.lookup(sym.name, lstGlobal, lambda x: x.name)
                 if res1 is None:
                     lstGlobal.insert(0, sym)
+                    if isinstance(sym.mtype, MType):
+                        lstFunc.insert(0,sym)
                 elif type(sym.mtype) == MType:
                     raise Redeclared(Function(), sym.name)
                 else:
@@ -86,39 +88,39 @@ class StaticChecker(BaseVisitor,Utils):
         #return [self.visit(x,c) for x in ast.decl]
         lstFunc = []
         lstenvi = [[]]
-        self.getGlobal(ast.decl, lstenvi[0], c)
+        self.getGlobal(ast.decl, lstenvi[0], c, lstFunc)
         self.checkEntryPoint(lstenvi[0])
         lstenvi[0] += c
         
         for x in ast.decl:
             if isinstance(x, FuncDecl):
-                self.visit(x, [[]] + lstenvi)
+                self.visit(x, [[[]] + lstenvi, lstFunc])
         
     def visitVarDecl(self, ast, c):
-        if self.lookup(ast.variable, c[0][0], lambda x: x.name):
+        if self.lookup(ast.variable, c[0][0][0], lambda x: x.name):
             if isinstance(c[1], Parameter):
                 raise Redeclared(Parameter(), ast.variable)
             else:
                 raise Redeclared(Variable(), ast.variable)
-        c[0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable()))
+        c[0][0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable()))
         
     def visitFuncDecl(self,ast, c): 
         for x in ast.param:
-            self.visit(x, (c, Parameter()))
+            self.visit(x, [c, Parameter()])
         self.visit(ast.body, c)
 
     def visitBlock(self, ast, c):
         for x in ast.member:
             if isinstance(x, Block):
-                self.visit(x, [[]] + c)
+                self.visit(x, [[[]] + c[0]] + c[1:])
             elif isinstance(x, Decl):
-                self.visit(x,(c, Variable()))
+                self.visit(x, [c, Variable()])
             else:
                 self.visit(x, c)
 
     def visitId(self, ast, c):
         IsDecl = False
-        for envi in c:
+        for envi in c[0]:
             if self.lookup(ast.name, envi, lambda x: x.name):
                 IsDecl = True
                 break
@@ -128,7 +130,7 @@ class StaticChecker(BaseVisitor,Utils):
     def visitCallExpr(self, ast, c):
         IsDecl = False
         
-        if self.lookup(ast.method.name, c[-1], lambda x: x.name):
+        if self.lookup(ast.method.name, c[0][-1], lambda x: x.name):
             IsDecl = True
                 
         if IsDecl is False:
