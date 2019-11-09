@@ -237,6 +237,7 @@ class CheckSuite(unittest.TestCase):
     def test_Undeclare_022(self):
         input = """int a;
         void main(int b){
+            a = 1;
             a = a + 1;
             b = 0;
             b - 1;
@@ -365,12 +366,11 @@ class CheckSuite(unittest.TestCase):
 
     def test_Undeclare_030(self):
         input = """int a, b;
-        
         void main(){
             a = 1;
             a =a + 1;
             int b;
-            b = -2
+            b = -2;
             b - 1;
             int c[9];
             for(a = 0; a < 10; a = a + 1){
@@ -387,7 +387,288 @@ class CheckSuite(unittest.TestCase):
         expect = "Undeclared Function: add"
         self.assertTrue(TestChecker.test(input, expect, 430))
 
-    
+    def test_TypeMissMatchInStmt_031(self):
+        input = """int a, b;
+        void main(){
+            return 3;
+        }
+        """
+        expect = "Type Mismatch In Statement: Return(IntLiteral(3))"
+        self.assertTrue(TestChecker.test(input, expect, 431))
+
+    def test_TypeMissMatchInStmt_032(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            if(f){
+
+            }
+        }
+        """
+        expect = "Type Mismatch In Statement: If(Id(f),Block([]))"
+        self.assertTrue(TestChecker.test(input, expect, 432))
+
+    def test_TypeMissMatchInStmt_033(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            if (a){
+
+            }
+            else{
+
+            }
+        }
+        """
+        expect = "Type Mismatch In Statement: If(Id(a),Block([]),Block([]))"
+        self.assertTrue(TestChecker.test(input, expect, 433))
+
+    def test_TypeMissMatchInStmt_034(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            do{
+                boolean f;
+                f = true;
+            }
+            while(f);
+        }
+        """
+        expect = "Type Mismatch In Statement: Dowhile([Block([VarDecl(f,BoolType),BinaryOp(=,Id(f),BooleanLiteral(true))])],Id(f))"
+        self.assertTrue(TestChecker.test(input, expect, 434))
+
+    def test_TypeMissMatchInStmt_035(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            do{
+                do{
+                    f = f + 1;
+                }while(f);
+            }while(true);
+        }
+        """
+        expect = "Type Mismatch In Statement: Dowhile([Block([BinaryOp(=,Id(f),BinaryOp(+,Id(f),IntLiteral(1)))])],Id(f))"
+        self.assertTrue(TestChecker.test(input, expect, 435))
+
+    def test_TypeMissMatchInStmt_036(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            do{
+                do{
+                    f = f + 1;
+                }while(a);
+            }while(true);
+        }
+        """
+        expect = "Type Mismatch In Statement: Dowhile([Block([BinaryOp(=,Id(f),BinaryOp(+,Id(f),IntLiteral(1)))])],Id(a))"
+        self.assertTrue(TestChecker.test(input, expect, 436))
+
+    def test_TypeMissMatchInStmt_037(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            do{
+                boolean f;
+            }
+            {
+                boolean f;
+            }while(f);
+        }
+        """
+        expect = "Type Mismatch In Statement: Dowhile([Block([VarDecl(f,BoolType)]),Block([VarDecl(f,BoolType)])],Id(f))"
+        self.assertTrue(TestChecker.test(input, expect, 437))
+
+    def test_TypeMissMatchInStmt_038(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            int i;
+            for(i = 0; i < 10; i = i + 1){
+                boolean a;
+                a = true;
+                a + 1;
+            }
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(+,Id(a),IntLiteral(1))"
+        self.assertTrue(TestChecker.test(input, expect, 438))
+
+    def test_TypeMissMatchInStmt_039(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            int i;
+            for(i = 0; i - 7; i = i + 1){
+                boolean a;
+                a = true;
+            }
+        }
+        """
+        expect = "Type Mismatch In Statement: For(BinaryOp(=,Id(i),IntLiteral(0));BinaryOp(-,Id(i),IntLiteral(7));BinaryOp(=,Id(i),BinaryOp(+,Id(i),IntLiteral(1)));Block([VarDecl(a,BoolType),BinaryOp(=,Id(a),BooleanLiteral(true))]))"
+        self.assertTrue(TestChecker.test(input, expect, 439))
+
+    def test_TypeMissMatchInStmt_040(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            float i;
+            for(i = 0; i < 10; i = i + 1){
+                boolean a;
+                a = true;
+            }
+        }
+        """
+        expect = "Type Mismatch In Statement: For(BinaryOp(=,Id(i),IntLiteral(0));BinaryOp(<,Id(i),IntLiteral(10));BinaryOp(=,Id(i),BinaryOp(+,Id(i),IntLiteral(1)));Block([VarDecl(a,BoolType),BinaryOp(=,Id(a),BooleanLiteral(true))]))"
+        self.assertTrue(TestChecker.test(input, expect, 440))
+
+    def test_TypeMissMatchInStmt_041(self):
+        input = """int a, b;
+        void main(){
+            a = 0;
+            b = 8;
+            float f;
+            f = 7.8;
+            int i;
+            for(i = 0; i < 10; i = i + 1){
+                boolean a;
+                a = true;
+            }
+        }
+        float add(float a, float b){
+            return true;
+        }
+        """
+        expect = "Type Mismatch In Statement: Return(BooleanLiteral(true))"
+        self.assertTrue(TestChecker.test(input, expect, 441))
+
+    def test_TypeMissMatchInExpr_042(self):
+        input = """int a, b;
+        void main(){
+            float f;
+            f = 7.8;
+            int i;
+            for(i = 0; i < 10; i = i + 1){
+                boolean a;
+                a = add(2,3);
+            }
+        }
+        float add(float a, float b){
+            return a + b;
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(=,Id(a),CallExpr(Id(add),[IntLiteral(2),IntLiteral(3)]))"
+        self.assertTrue(TestChecker.test(input, expect, 442))
+
+    def test_TypeMissMatchInExpr_043(self):
+        input = """int a, b;
+        void main(){
+            float f;
+            f = 7.8;
+            int i;
+            for(i = 0; i < 10; i = i + 1){
+                boolean a;
+                i = getInt();
+                a = getFloat();
+            }
+        }
+        float add(float a, float b){
+            return a + b;
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(=,Id(a),CallExpr(Id(getFloat),[]))"
+        self.assertTrue(TestChecker.test(input, expect, 443))
+
+    def test_TypeMissMatchInExpr_044(self):
+        input = """int a, b;
+        void main(){
+            float f;
+            f = 7.8;
+            boolean check;
+            check = f;
+        }
+        float add(float a, float b){
+            return a + b;
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(=,Id(check),Id(f))"
+        self.assertTrue(TestChecker.test(input, expect, 444))
+
+    def test_TypeMissMatchInExpr_045(self):
+        input = """int a, b;
+        void main(){
+            float f;
+            f = 7.8;
+            boolean check;
+            f = add( 3.5, 8.9);
+        }
+        float[] add(float a, float b){
+            return a + b;
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(=,Id(f),CallExpr(Id(add),[FloatLiteral(3.5),FloatLiteral(8.9)]))"
+        self.assertTrue(TestChecker.test(input, expect, 445))
+
+    def test_TypeMissMatchInExpr_046(self):
+        input = """int a, b;
+        void main(){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            f = add( 3.5, 8.9);
+        }
+        float[] add(float a, float b){
+            float c[1];
+            return c;
+        }
+        """
+        expect = "Type Mismatch In Expression: BinaryOp(=,Id(f),CallExpr(Id(add),[FloatLiteral(3.5),FloatLiteral(8.9)]))"
+        self.assertTrue(TestChecker.test(input, expect, 446))
+
+    def test_TypeMissMatchInExpr_047(self):
+        input = """int a, b;
+        void main(){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add( 3.5, 8.9)[7];
+        }
+        float[] add(float a, float b){
+            float c[1];
+            return c;
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 447))
+
     
 
     
