@@ -1,7 +1,5 @@
+#1711679
 
-"""
- * @author nhphung
-"""
 from AST import * 
 from Visitor import *
 from Utils import Utils
@@ -154,7 +152,11 @@ class StaticChecker(BaseVisitor,Utils):
             elif isinstance(x, Expr) is False:
                 [isReturn, isBreak] = self.visit(x, [c[0], c[1], c[2], c[3], isReturn, isBreak])
             else:
+                if isReturn is True or isBreak is True:
+                    raise UnreachableStatement(x)
                 self.visit(x, c)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         return [isReturn, isBreak]
 
     def visitId(self, ast, c):
@@ -241,6 +243,8 @@ class StaticChecker(BaseVisitor,Utils):
         raise TypeMismatchInExpression(ast)
 
     def visitIf(self, ast, c):
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         expr = self.visit(ast.expr, c)
         if type(expr) is not BoolType:
             raise TypeMismatchInStatement(ast)
@@ -252,7 +256,7 @@ class StaticChecker(BaseVisitor,Utils):
             isBreak1 = False
             [isReturn1, isBreak1] = self.visit(ast.elseStmt, [c[0], c[1], c[2], c[3], isReturn1, isBreak1])
             return [isReturn and isReturn1, isBreak and isBreak1]
-        return [False, isBreak]
+        return [False, False]
 
     def visitFor(self, ast, c):
         expr1 = self.visit(ast.expr1, c)
@@ -264,7 +268,9 @@ class StaticChecker(BaseVisitor,Utils):
         #self.visit(ast.loop, c)
         if type(expr1) is not IntType or type(expr3) is not IntType or type(expr2) is not BoolType:
             raise TypeMismatchInStatement(ast)
-        return [False, isBreak]
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [False, False]
 
     def visitDowhile(self, ast, c):
         isReturn = False
@@ -275,20 +281,28 @@ class StaticChecker(BaseVisitor,Utils):
             elif isinstance(x, Expr) is False:
                 [isReturn, isBreak] = self.visit(x, [c[0], c[1], True, c[3], isReturn, isBreak])
             else:
+                if isReturn is True or isBreak is True:
+                    raise UnreachableStatement(x)
                 self.visit(x, c)
         exp = self.visit(ast.exp, c)
         if type(exp) is not BoolType:
             raise TypeMismatchInStatement(ast)
-        return [isReturn, isBreak]
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [isReturn, False]
 
     def visitBreak(self, ast, c):
         if c[2] is False:
             raise BreakNotInLoop()
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         return [False, True]
 
     def visitContinue(self, ast, c):
         if c[2] is False:
             raise ContinueNotInLoop()
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         return [False, True]
 
     def visitReturn(self, ast, c):
@@ -299,6 +313,8 @@ class StaticChecker(BaseVisitor,Utils):
                 raise TypeMismatchInStatement(ast)
         elif type(c[3].returnType) is not VoidType:
             raise TypeMismatchInStatement(ast)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         return [True, False]
 
     def visitArrayType(self, ast, c):
@@ -331,20 +347,3 @@ class StaticChecker(BaseVisitor,Utils):
     def visitBooleanLiteral(self, ast, c):
         return BoolType()
 
-    
-    """def visitCallExpr(self, ast, c): 
-        at = [self.visit(x,(c[0],False)) for x in ast.param]
-        
-        res = self.lookup(ast.method.name,c[0],lambda x: x.name)
-        if res is None or not type(res.mtype) is MType:
-            raise Undeclared(Function(),ast.method.name)
-        elif len(res.mtype.partype) != len(at):
-            if c[1]:
-                raise TypeMismatchInStatement(ast)
-            else:
-                raise TypeMismatchInExpression(ast)
-        else:
-            return res.mtype.rettype"""
-
-
-    

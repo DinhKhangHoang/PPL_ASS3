@@ -856,7 +856,6 @@ class CheckSuite(unittest.TestCase):
             int i;
             do{
                 int i;
-                return 0;
             }while(false);
             if(true){
                 if(true){
@@ -1193,6 +1192,170 @@ class CheckSuite(unittest.TestCase):
         """
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 475))
+
+    def test_UnreachableStmt_076(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            return;
+            b = 0;
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(b),IntLiteral(0))"
+        self.assertTrue(TestChecker.test(input, expect, 476))
+
+    def test_UnreachableStmt_077(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            return;
+            if(true){
+
+            }
+        }
+        """
+        expect = "Unreachable Statement: If(BooleanLiteral(true),Block([]))"
+        self.assertTrue(TestChecker.test(input, expect, 477))
+
+    def test_UnreachableStmt_078(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            if(true){
+                return;
+            }
+            else{
+                return;
+            }
+            a = b * a + 100;
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(a),BinaryOp(+,BinaryOp(*,Id(b),Id(a)),IntLiteral(100)))"
+        self.assertTrue(TestChecker.test(input, expect, 478))
+
+    def test_UnreachableStmt_079(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            do{
+                if(true){
+                    break;
+                }
+                else{
+                    break;
+                }
+                a = b * a + 100;
+            }while(false);
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(a),BinaryOp(+,BinaryOp(*,Id(b),Id(a)),IntLiteral(100)))"
+        self.assertTrue(TestChecker.test(input, expect, 479))
+
+    def test_UnreachableStmt_080(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            do{
+                return;
+                if(true){
+                    break;
+                }
+                else{
+                    break;
+                }
+            }while(false);
+        }
+        """
+        expect = "Unreachable Statement: If(BooleanLiteral(true),Block([Break()]),Block([Break()]))"
+        self.assertTrue(TestChecker.test(input, expect, 480))
+
+    def test_UnreachableStmt_081(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            do{
+                if(true){
+                    break;
+                }
+                else{
+                    continue;
+                }
+                b = 1000;
+            }while(false);
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(b),IntLiteral(1000))"
+        self.assertTrue(TestChecker.test(input, expect, 481))
+
+    def test_UnreachableStmt_082(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            do{
+                if(true){
+                    break;
+                }
+                else{
+                    b = 8298478;
+                }
+            }
+                return;
+            while(false);
+            a = 7898721;
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(a),IntLiteral(7898721))"
+        self.assertTrue(TestChecker.test(input, expect, 482))
+
+    def test_UnreachableStmt_083(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            for(a = 0; a < 100; a = a + 1)
+                return;
+            b = 216;
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 483))
+
+    def test_UnreachableStmt_084(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            for(a = 0; a < 100; a = a + 1){
+                break;
+                break;
+            }
+            b = 216;
+        }
+        """
+        expect = "Unreachable Statement: Break()"
+        self.assertTrue(TestChecker.test(input, expect, 484))
+
+    def test_UnreachableStmt_085(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            do
+                break;
+                a = a + b;
+            while(false);
+            b = 216;
+        }
+        """
+        expect = "Unreachable Statement: BinaryOp(=,Id(a),BinaryOp(+,Id(a),Id(b)))"
+        self.assertTrue(TestChecker.test(input, expect, 485))
 
     
     
