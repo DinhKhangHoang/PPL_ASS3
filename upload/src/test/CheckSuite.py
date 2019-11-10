@@ -669,6 +669,223 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 447))
 
-    
+    def test_TypeMissMatchInExpr_048(self):
+        input = """int a, b;
+        void main(){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, 8.9)[7];
+        }
+        float[] add(float a[], float b){
+            float c[1];
+            return a;
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 448))
 
+    def test_TypeMissMatchInExpr_049(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, f)[7];
+        }
+        float[] add(float a[], float b[]){
+            float c[1];
+            return a;
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 449))
+
+    def test_FunctionNotReturn_050(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, f)[7];
+        }
+        float[] add(float a[], float b[]){
+            float c[1];
+            //return a;
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 450))
+
+    def test_FunctionNotReturn_051(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, f)[7];
+        }
+        float[] add(float a[], float b[]){
+            float c[1];
+            boolean check;
+            check = false;
+            if(check){
+                return a;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 451))
+
+    def test_FunctionNotReturn_052(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, f)[7];
+        }
+        float[] add(float a[], float b[]){
+            float c[1];
+            boolean check;
+            check = false;
+            if(check){
+                
+            }
+            else{
+                return b;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 452))
+
+    def test_FunctionNotReturn_053(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(f, f)[7];
+        }
+        float[] add(float a[], float b[]){
+            float c[1];
+            boolean check;
+            check = false;
+            if(check){
+                do{
+                    if(!check){
+                        return a;
+                    }
+                }while(!check);
+            }
+            else{
+                return b;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 453))
+
+    def test_FunctionNotReturn_054(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+        }
+        int add( int a, int b){
+            int i;
+            for(i = 0; i < 10; i = i + 1){
+                return a + b;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 454))
+
+    def test_FunctionNotReturn_055(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+        }
+        int add( int a, int b){
+            int i;
+            if(true){
+                if(false){
+                    return 0;
+                }
+                return 1;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 455))
+
+    def test_FunctionNotReturn_056(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+        }
+        int add( int a, int b){
+            int i;
+            do{
+                int i;
+            }while(false);
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 456))
+
+    def test_FunctionNotReturn_057(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+        }
+        int add( int a, int b){
+            int i;
+            do{
+                int i;
+                return 0;
+            }while(false);
+            if(true){
+                if(true){
+                    return 0;
+                }
+            }
+            else{
+                return 1;
+            }
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 457))
+
+    def test_FunctionNotReturn_058(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+            add;
+        }
+        int add( int a, int b){
+            return 0;
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 458))
+
+    
     

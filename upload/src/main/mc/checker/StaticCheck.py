@@ -113,6 +113,9 @@ class StaticChecker(BaseVisitor,Utils):
         for x in ast.decl:
             if isinstance(x, FuncDecl):
                 self.visit(x, [[[]] + lstenvi, lstFunc])
+        for fun in lstFunc:
+            if fun.name != 'main':
+                raise UnreachableFunction(fun.name)
         
     def visitVarDecl(self, ast, c):
         if self.lookup(ast.variable, c[0][0][0], lambda x: x.name):
@@ -127,7 +130,9 @@ class StaticChecker(BaseVisitor,Utils):
             self.visit(x, [c, Parameter()])
         isReturn = False
         isBreak = False
-        self.visit(ast.body, [c[0], c[1], False, ast, isReturn, isBreak])
+        [isReturn, isBreak] = self.visit(ast.body, [c[0], c[1], False, ast, isReturn, isBreak])
+        if isReturn is False and type(ast.returnType) is not VoidType:
+            raise FunctionNotReturn(ast.name.name)
 
     #c[0]: list environment
     #c[1]: danh sach ham chua duoc goi
@@ -139,20 +144,25 @@ class StaticChecker(BaseVisitor,Utils):
     #return[1]: boolean, true neu da goi break/continue
 
     def visitBlock(self, ast, c):
+        isReturn = False
+        isBreak = False
         for x in ast.member:
             if isinstance(x, Block):
-                self.visit(x, [[[]] + c[0]] + c[1:])
+                [isReturn, isBreak] = self.visit(x, [[[]] + c[0], c[1], c[2], c[3], isReturn, isBreak])
             elif isinstance(x, Decl):
                 self.visit(x, [c, Variable()])
+            elif isinstance(x, Expr) is False:
+                [isReturn, isBreak] = self.visit(x, [c[0], c[1], c[2], c[3], isReturn, isBreak])
             else:
                 self.visit(x, c)
+        return [isReturn, isBreak]
 
     def visitId(self, ast, c):
         IsDecl = False
         sym = None
         for envi in c[0]:
             sym = self.lookup(ast.name, envi, lambda x: x.name)
-            if sym is not None:
+            if sym is not None and type(sym.mtype) is not MType:
                 IsDecl = True
                 break
         if IsDecl is False:
@@ -172,6 +182,10 @@ class StaticChecker(BaseVisitor,Utils):
         for i in range(len(sym.mtype.partype)):
             if self.checkType(sym.mtype.partype[i], param[i]) is False:
                 raise TypeMismatchInExpression(ast)
+        sym1 = self.lookup(ast.method.name, c[1], lambda x: x.name)
+        if sym1 is not None:
+            if sym1.name != c[3].name.name:
+                c[1].remove(sym1)
         return sym.mtype.rettype
 
     def visitArrayCell(self, ast, c):
@@ -186,6 +200,8 @@ class StaticChecker(BaseVisitor,Utils):
     def visitBinaryOp(self, ast, c):
         left = self.visit(ast.left, c)
         right = self.visit(ast.right, c)
+        if isinstance(ast.left, LHS) is False and ast.op == '=':
+            raise NotLeftValue(ast)
         if type(left) == type(right):
             if type(left) is BoolType:
                 if ast.op in ['==', '!=', '&&', '||', '=']:
@@ -226,35 +242,54 @@ class StaticChecker(BaseVisitor,Utils):
 
     def visitIf(self, ast, c):
         expr = self.visit(ast.expr, c)
-        self.visit(ast.thenStmt, c)
-        if ast.elseStmt is not None:
-            self.visit(ast.elseStmt, c)
         if type(expr) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        isReturn = False
+        isBreak = False
+        [isReturn, isBreak] = self.visit(ast.thenStmt, [c[0], c[1], c[2], c[3], isReturn, isBreak])
+        if ast.elseStmt is not None:
+            isReturn1 = False
+            isBreak1 = False
+            [isReturn1, isBreak1] = self.visit(ast.elseStmt, [c[0], c[1], c[2], c[3], isReturn1, isBreak1])
+            return [isReturn and isReturn1, isBreak and isBreak1]
+        return [False, isBreak]
 
     def visitFor(self, ast, c):
         expr1 = self.visit(ast.expr1, c)
         expr2 = self.visit(ast.expr2, c)
         expr3 = self.visit(ast.expr3, c)
-        self.visit(ast.loop, c)
+        isReturn = False
+        isBreak = False
+        [isReturn, isBreak] = self.visit(ast.loop, [c[0], c[1], True, c[3], isReturn, isBreak])
+        #self.visit(ast.loop, c)
         if type(expr1) is not IntType or type(expr3) is not IntType or type(expr2) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        return [False, isBreak]
 
     def visitDowhile(self, ast, c):
+        isReturn = False
+        isBreak = False
         for x in ast.sl:
             if isinstance(x, Block):
-                self.visit(x, [[[]] + c[0]] + c[1:])
+                [isReturn, isBreak] = self.visit(x, [[[]] + c[0], c[1], True, c[3], isReturn, isBreak])
+            elif isinstance(x, Expr) is False:
+                [isReturn, isBreak] = self.visit(x, [c[0], c[1], True, c[3], isReturn, isBreak])
             else:
                 self.visit(x, c)
         exp = self.visit(ast.exp, c)
         if type(exp) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        return [isReturn, isBreak]
 
     def visitBreak(self, ast, c):
-        return Break()
+        if c[2] is False:
+            raise BreakNotInLoop()
+        return [False, True]
 
     def visitContinue(self, ast, c):
-        return Continue()
+        if c[2] is False:
+            raise ContinueNotInLoop()
+        return [False, True]
 
     def visitReturn(self, ast, c):
         if ast.expr is not None:
@@ -264,6 +299,7 @@ class StaticChecker(BaseVisitor,Utils):
                 raise TypeMismatchInStatement(ast)
         elif type(c[3].returnType) is not VoidType:
             raise TypeMismatchInStatement(ast)
+        return [True, False]
 
     def visitArrayType(self, ast, c):
         return ArrayType(ast.dimen, ast.eleType)
