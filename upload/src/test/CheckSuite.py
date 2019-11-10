@@ -878,14 +878,321 @@ class CheckSuite(unittest.TestCase):
             f[0] = 7.8;
             boolean check;
             add(2, 3);
-            add;
         }
         int add( int a, int b){
-            return 0;
+            for(a = 0; a < 10; a = a +1){
+                a = a + 2;
+                return 0;
+            }
+            do{
+                
+            }while(true);
         }
         """
         expect = "Function add Not Return "
         self.assertTrue(TestChecker.test(input, expect, 458))
+
+    def test_FunctionNotReturn_059(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            add(2, 3);
+        }
+        int add( int a, int b){
+            for(a = 0; a < 10; a = a +1){
+                a = a + 2;
+                return 0;
+            }
+            if(false){
+                do{
+                    return 10;
+                }while(true);
+            }
+            
+        }
+        """
+        expect = "Function add Not Return "
+        self.assertTrue(TestChecker.test(input, expect, 459))
+
+    def test_BreakNotInLoop_060(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            if(true){
+                break;
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 460))
+
+    def test_BreakNotInLoop_061(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            if(true){
+                
+            }
+            else{
+                break;
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 461))
+
+    def test_BreakNotInLoop_062(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            if(true){
+                for(a = 0; a < 10;  a = a + 1){
+                    a =a * 10;
+                }
+                break;
+            }
+            else{
+                
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 462))
+
+    def test_BreakNotInLoop_063(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            break;
+            if(true){
+                for(a = 0; a < 10;  a = a + 1){
+                    a =a * 10;
+                }
+            }
+            else{
+                
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 463))
+
+    def test_BreakNotInLoop_064(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            if(true){
+                for(a = 0; a < 10;  a = a + 1){
+                    a =a * 10;
+                    break;
+                }
+            }
+            else{
+                do{
+                    b = 10;
+                    if(true)
+                        break;
+                }while(false);
+                break;
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 464))
+
+    def test_BreakNotInLoop_065(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float f[8];
+            f[0] = 7.8;
+            boolean check;
+            if(true){
+                for(a = 0; a < 10;  a = a + 1){
+                    a =a * 10;
+                    break;
+                }
+            }
+            else{
+                do{
+                    b = 10;
+                    if(true)
+                        if(true)
+                            if(true)
+                                break;
+                }while(false);
+                break;
+            }
+        }
+        """
+        expect = "Break Not In Loop"
+        self.assertTrue(TestChecker.test(input, expect, 465))
+
+    def test_NotLeftValue_066(self):
+        input = """int a, b;
+        void main(int argc[]){
+            7 = 8;
+        }
+        """
+        expect = "Not Left Value: BinaryOp(=,IntLiteral(7),IntLiteral(8))"
+        self.assertTrue(TestChecker.test(input, expect, 466))
+
+    def test_NotLeftValue_067(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            a + b = 8;
+        }
+        """
+        expect = "Not Left Value: BinaryOp(=,BinaryOp(+,Id(a),Id(b)),IntLiteral(8))"
+        self.assertTrue(TestChecker.test(input, expect, 467))
+
+    def test_NotLeftValue_068(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            add(a, b) = 8;
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        """
+        expect = "Not Left Value: BinaryOp(=,CallExpr(Id(add),[Id(a),Id(b)]),IntLiteral(8))"
+        self.assertTrue(TestChecker.test(input, expect, 468))
+
+    def test_NotLeftValue_069(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            b = 4 = 3;
+            add(a, b);
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        """
+        expect = "Not Left Value: BinaryOp(=,IntLiteral(4),IntLiteral(3))"
+        self.assertTrue(TestChecker.test(input, expect, 469))
+
+    def test_NotLeftValue_070(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            b + 4 = 3* add(3,4);
+            add(a, b);
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        """
+        expect = "Not Left Value: BinaryOp(=,BinaryOp(+,Id(b),IntLiteral(4)),BinaryOp(*,IntLiteral(3),CallExpr(Id(add),[IntLiteral(3),IntLiteral(4)])))"
+        self.assertTrue(TestChecker.test(input, expect, 470))
+
+    def test_UnreachableFunction_071(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        """
+        expect = "Unreachable Function: add"
+        self.assertTrue(TestChecker.test(input, expect, 471))
+
+    def test_UnreachableFunction_072(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            add(0, 1);
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        int sub(int d, int e){
+            return -100;
+        }
+        """
+        expect = "Unreachable Function: sub"
+        self.assertTrue(TestChecker.test(input, expect, 472))
+
+    def test_UnreachableFunction_073(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            add(0, 1);
+        }
+        int add(int c, int d){
+            return 100;
+        }
+        int sub(int d, int e){
+            return sub(d-1, e-1);
+        }
+        """
+        expect = "Unreachable Function: sub"
+        self.assertTrue(TestChecker.test(input, expect, 473))
+
+    def test_UnreachableFunction_074(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            sub(0, 1);
+        }
+        int add(int c, int d){
+             c= 0;
+             d = 1;
+            return sub(c, d);
+        }
+        int sub(int d, int e){
+            return add(d-1, e-1);
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 474))
+
+    def test_UnreachableFunction_075(self):
+        input = """int a, b;
+        void main(int argc[]){
+            a = 0;
+            b = 1;
+            sub(0, 1);
+        }
+        int add(int c, int d){
+             c= 0;
+             d = 1;
+            return sub(c, d);
+        }
+        int sub(int d, int e){
+            return add(d-1, e-1);
+        }
+        float mul(float g, float h){
+            return div(g, h);
+        }
+        float div(float g ,float h){
+            return mul(g, h);
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 475))
 
     
     
