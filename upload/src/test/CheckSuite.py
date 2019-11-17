@@ -1357,5 +1357,80 @@ class CheckSuite(unittest.TestCase):
         expect = "Unreachable Statement: BinaryOp(=,Id(a),BinaryOp(+,Id(a),Id(b)))"
         self.assertTrue(TestChecker.test(input, expect, 485))
 
+    def test_IndexOutOfRange_086(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float c[9];
+            c[10 + 1];
+        }
+        """
+        expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(+,IntLiteral(10),IntLiteral(1)))"
+        self.assertTrue(TestChecker.test(input, expect, 486))
+
+    def test_IndexOutOfRange_087(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float c[9];
+            c[10 - 1];
+        }
+        """
+        expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(-,IntLiteral(10),IntLiteral(1)))"
+        self.assertTrue(TestChecker.test(input, expect, 487))
+
+    def test_IndexOutOfRange_088(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[9];
+            c[10-1];
+        }
+        """
+        expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(-,IntLiteral(10),IntLiteral(1)))"
+        self.assertTrue(TestChecker.test(input, expect, 488))
+
+    def test_IndexOutOfRange_089(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[6];
+            c[(10-1)/2*4%10];
+        }
+        """
+        expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(%,BinaryOp(*,BinaryOp(/,BinaryOp(-,IntLiteral(10),IntLiteral(1)),IntLiteral(2)),IntLiteral(4)),IntLiteral(10)))"
+        self.assertTrue(TestChecker.test(input, expect, 489))
+
+    def test_IndexOutOfRange_090(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[9];
+            c[(10-1)/2*4%10 + 3];
+        }
+        """
+        expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(+,BinaryOp(%,BinaryOp(*,BinaryOp(/,BinaryOp(-,IntLiteral(10),IntLiteral(1)),IntLiteral(2)),IntLiteral(4)),IntLiteral(10)),IntLiteral(3)))"
+        self.assertTrue(TestChecker.test(input, expect, 490))
+
+    def test_IndexOutOfRange_091(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[9];
+            c[(10-1)/2*4%10 % 2 +6];
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 491))
+
+    def test_IndexOutOfRange_092(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[9];
+            c[1+2-3*4/5%10+5]
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 492))
+
     
     
