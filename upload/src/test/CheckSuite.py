@@ -1426,11 +1426,130 @@ class CheckSuite(unittest.TestCase):
         void main(int argc[]){
             b = 10;
             float c[9];
-            c[1+2-3*4/5%10+5]
+            c[1+2-3*4/5%10+5];
         }
         """
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 492))
+
+    def test_IndexOutOfRange_093(self):
+        input = """int a, b;
+        void main(int argc[]){
+            b = 10;
+            float c[9];
+            c[1+2-3*4/5%10+10 - a - b];
+        }
+        """
+        expect = ""
+        self.assertTrue(TestChecker.test(input, expect, 493))
+
+    def test_UninitialiedVariable_094(self):
+        input = """int a, b;
+        void main(int argc[]){
+            int d;
+            float e;
+            e = a + b + d;
+        }
+        """
+        expect = "Uninitialized Variable: d"
+        self.assertTrue(TestChecker.test(input, expect, 494))
+
+    def test_UninitialiedVariable_095(self):
+        input = """int a, b;
+        void main(int argc[]){
+            boolean check;
+            do{
+                a =a + 1;
+            }while(check);
+        }
+        """
+        expect = "Uninitialized Variable: check"
+        self.assertTrue(TestChecker.test(input, expect, 495))
+
+    def test_UninitialiedVariable_096(self):
+        input = """int a, b;
+        void main(int argc[]){
+            boolean check;
+            boolean temp;
+            do{
+                check = false;
+                check = temp;
+                a =a + 1;
+            }while(check);
+        }
+        """
+        expect = "Uninitialized Variable: temp"
+        self.assertTrue(TestChecker.test(input, expect, 496))
+
+    def test_UninitialiedVariable_097(self):
+        input = """int a, b;
+        void main(int argc[]){
+            int c;
+            if(false){
+                c = c + 1;
+            }
+            else{
+                c = 10;
+            }
+            c = c * 10;
+            
+        }
+        """
+        expect = "Uninitialized Variable: c"
+        self.assertTrue(TestChecker.test(input, expect, 497))
+
+    def test_UninitialiedVariable_098(self):
+        input = """int a, b;
+        void main(int argc[]){
+            int c;
+            for(c = 0; c < 100; c  = c + 1){
+                int e, d;
+                d = 0;
+                c = d + c;
+                c = c - e;
+            }
+        }
+        """
+        expect = "Uninitialized Variable: e"
+        self.assertTrue(TestChecker.test(input, expect, 498))
+
+    def test_UninitialiedVariable_099(self):
+        input = """int a, b;
+        void main(int argc[]){
+            float c[100];
+            float result;
+            result = c[50] * 3.4 - 20.0;
+            float temp;
+            if(true){
+                temp = 0;
+            }
+            else{
+                result = temp;
+                boolean check;
+            }
+            check;
+        }
+        """
+        expect = "Uninitialized Variable: check"
+        self.assertTrue(TestChecker.test(input, expect, 499))
+
+    def test_UninitialiedVariable_100(self):
+        input = """int a[10], b[10];
+        void main(int argc[]){
+            float c[100];
+            float result;
+            int x;
+            result = c[50] * 3.4 - 20.0;
+            float temp;
+            foo(2)[3+x] = a[b[2]] + 3;
+        }
+        int[] foo(int x){
+            int a[10];
+            return a;
+        }
+        """
+        expect = "Uninitialized Variable: x"
+        self.assertTrue(TestChecker.test(input, expect, 500))
 
     
     

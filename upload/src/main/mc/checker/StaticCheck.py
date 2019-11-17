@@ -47,11 +47,11 @@ class StaticChecker(BaseVisitor,Utils):
     def convertToSymbol(self, decl):
         if type(decl) == VarDecl:
             if type(decl.varType) == ArrayType:
-                return Symbol(decl.variable, ArrayType(decl.varType.dimen, decl.varType.eleType), Variable())
+                return Symbol(decl.variable, ArrayType(decl.varType.dimen, decl.varType.eleType), Variable(), True)
             elif type(decl.varType) == ArrayPointerType:
-                return Symbol(decl.variable, ArrayPointerType(decl.varType.eleType), Variable())
+                return Symbol(decl.variable, ArrayPointerType(decl.varType.eleType), Variable(), True)
             else:
-                return Symbol(decl.variable, decl.varType, Variable())
+                return Symbol(decl.variable, decl.varType, Variable(), True)
         elif type(decl) == FuncDecl:
             if type(decl.returnType) == ArrayPointerType:
                 return Symbol(decl.name.name, MType([x.varType for x in decl.param], ArrayPointerType(decl.returnType.eleType)), Function())
@@ -136,8 +136,12 @@ class StaticChecker(BaseVisitor,Utils):
                 raise Redeclared(Parameter(), ast.variable)
             else:
                 raise Redeclared(Variable(), ast.variable)
-        c[0][0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable()))
-        
+        if isinstance(c[1], Parameter):
+            c[0][0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable(), True))
+        elif type(ast.varType) == ArrayType:
+            c[0][0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable(), True))
+        else:
+            c[0][0][0].insert(0, Symbol(ast.variable, self.visit(ast.varType, c), Variable()))
     def visitFuncDecl(self,ast, c): 
         for x in ast.param:
             self.visit(x, [c, Parameter()])
@@ -176,11 +180,14 @@ class StaticChecker(BaseVisitor,Utils):
 
     def visitId(self, ast, c):
         IsDecl = False
+        IsInitialized = False
         sym = None
         for envi in c[0]:
             sym = self.lookup(ast.name, envi, lambda x: x.name)
             if sym is not None and type(sym.mtype) is not MType:
                 IsDecl = True
+                if sym.value is None:
+                    raise UninitializedVariable(ast.name)
                 break
         if IsDecl is False:
             raise Undeclared(Identifier(), ast.name)
@@ -218,10 +225,16 @@ class StaticChecker(BaseVisitor,Utils):
         return [arr[0].eleType, None]
 
     def visitBinaryOp(self, ast, c):
-        left = self.visit(ast.left, c)
-        right = self.visit(ast.right, c)
         if isinstance(ast.left, LHS) is False and ast.op == '=':
             raise NotLeftValue(ast)
+        right = self.visit(ast.right, c)
+        if type(ast.left) is Id and ast.op == "=":
+            for envi in c[0]:
+                sym = self.lookup(ast.left.name, envi, lambda x: x.name)
+                if sym is not None and sym.value is None:
+                    sym.value = True
+                    break
+        left = self.visit(ast.left, c)
         if type(left[0]) == type(right[0]):
             if type(left[0]) is BoolType:
                 if ast.op in ['==', '!=', '&&', '||', '=']:
