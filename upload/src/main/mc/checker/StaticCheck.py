@@ -1,7 +1,5 @@
+#1711679
 
-"""
- * @author nhphung
-"""
 from AST import * 
 from Visitor import *
 from Utils import Utils
@@ -79,6 +77,21 @@ class StaticChecker(BaseVisitor,Utils):
                 else:
                     raise Redeclared(Variable(), sym.name)
 
+    def calculateBinOp(self, left, right, op):
+        if left is None or right is None:
+            return None
+        if op == '+':
+            return left + right
+        elif op == '-':
+            return left - right
+        elif op == '*':
+            return left * right
+        elif op == '/':
+            return left // right
+        elif op == '%':
+            return left % right
+        else:
+            return None
 
     def checkEntryPoint(self, lstFunc):
         if self.lookup("main", lstFunc, lambda x: x.name) is None:
@@ -113,6 +126,9 @@ class StaticChecker(BaseVisitor,Utils):
         for x in ast.decl:
             if isinstance(x, FuncDecl):
                 self.visit(x, [[[]] + lstenvi, lstFunc])
+        for fun in lstFunc:
+            if fun.name != 'main':
+                raise UnreachableFunction(fun.name)
         
     def visitVarDecl(self, ast, c):
         if self.lookup(ast.variable, c[0][0][0], lambda x: x.name):
@@ -127,7 +143,9 @@ class StaticChecker(BaseVisitor,Utils):
             self.visit(x, [c, Parameter()])
         isReturn = False
         isBreak = False
-        self.visit(ast.body, [c[0], c[1], False, ast, isReturn, isBreak])
+        [isReturn, isBreak] = self.visit(ast.body, [c[0], c[1], False, ast, isReturn, isBreak])
+        if isReturn is False and type(ast.returnType) is not VoidType:
+            raise FunctionNotReturn(ast.name.name)
 
     #c[0]: list environment
     #c[1]: danh sach ham chua duoc goi
@@ -139,26 +157,35 @@ class StaticChecker(BaseVisitor,Utils):
     #return[1]: boolean, true neu da goi break/continue
 
     def visitBlock(self, ast, c):
+        isReturn = False
+        isBreak = False
         for x in ast.member:
             if isinstance(x, Block):
-                self.visit(x, [[[]] + c[0]] + c[1:])
+                [isReturn, isBreak] = self.visit(x, [[[]] + c[0], c[1], c[2], c[3], isReturn, isBreak])
             elif isinstance(x, Decl):
                 self.visit(x, [c, Variable()])
+            elif isinstance(x, Expr) is False:
+                [isReturn, isBreak] = self.visit(x, [c[0], c[1], c[2], c[3], isReturn, isBreak])
             else:
+                if isReturn is True or isBreak is True:
+                    raise UnreachableStatement(x)
                 self.visit(x, c)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [isReturn, isBreak]
 
     def visitId(self, ast, c):
         IsDecl = False
         sym = None
         for envi in c[0]:
             sym = self.lookup(ast.name, envi, lambda x: x.name)
-            if sym is not None:
+            if sym is not None and type(sym.mtype) is not MType:
                 IsDecl = True
                 break
         if IsDecl is False:
             raise Undeclared(Identifier(), ast.name)
         else:
-            return sym.mtype
+            return [sym.mtype, None]
 
     def visitCallExpr(self, ast, c):
         param = [self.visit(x, c) for x in ast.param]
@@ -170,100 +197,143 @@ class StaticChecker(BaseVisitor,Utils):
         if len(sym.mtype.partype) != len(param):
             raise TypeMismatchInExpression(ast)
         for i in range(len(sym.mtype.partype)):
-            if self.checkType(sym.mtype.partype[i], param[i]) is False:
+            if self.checkType(sym.mtype.partype[i], param[i][0]) is False:
                 raise TypeMismatchInExpression(ast)
-        return sym.mtype.rettype
+        sym1 = self.lookup(ast.method.name, c[1], lambda x: x.name)
+        if sym1 is not None:
+            if sym1.name != c[3].name.name:
+                c[1].remove(sym1)
+        return [sym.mtype.rettype, None]
 
     def visitArrayCell(self, ast, c):
         arr = self.visit(ast.arr, c)
         idx = self.visit(ast.idx, c)
-        if type(idx) is not IntType:
+        if type(idx[0]) is not IntType:
             raise TypeMismatchInExpression(ast)
-        if type(arr) is not ArrayType and type(arr) is not ArrayPointerType:
+        if type(arr[0]) is not ArrayType and type(arr[0]) is not ArrayPointerType:
             raise TypeMismatchInExpression(ast)
-        return arr.eleType
+        if idx[1] is not None and type(arr[0]) is ArrayType:
+            if idx[1] < 0 or idx[1] >= arr[0].dimen:
+                raise IndexOutOfRange(ast)
+        return [arr[0].eleType, None]
 
     def visitBinaryOp(self, ast, c):
         left = self.visit(ast.left, c)
         right = self.visit(ast.right, c)
-        if type(left) == type(right):
-            if type(left) is BoolType:
+        if isinstance(ast.left, LHS) is False and ast.op == '=':
+            raise NotLeftValue(ast)
+        if type(left[0]) == type(right[0]):
+            if type(left[0]) is BoolType:
                 if ast.op in ['==', '!=', '&&', '||', '=']:
-                    return BoolType()
-            if type(left) is IntType:
+                    return [BoolType(), None]
+            if type(left[0]) is IntType:
                 if ast.op in ['+', '-', '*', '/', '%', '=']:
-                    return IntType()
+                    return [IntType(), self.calculateBinOp(left[1], right[1], ast.op)]
                 elif ast.op in ['<', '<=', '>', '>=', '==', '!=']:
-                    return BoolType()
-            if type(left) is FloatType:
+                    return [BoolType(), None]
+            if type(left[0]) is FloatType:
                 if ast.op in ['+', '-', '*', '/', '=']:
-                    return FloatType()
+                    return [FloatType(), None]
                 elif ast.op in ['<', '<=', '>', '>=']:
-                    return BoolType()
+                    return [BoolType(), None]
             raise TypeMismatchInExpression(ast)
         else:
-            if type(left) is IntType and type(right) is FloatType:
+            if type(left[0]) is IntType and type(right[0]) is FloatType:
                 if ast.op in ['+', '-', '*', '/']:
-                    return FloatType()
+                    return [FloatType(), None]
                 elif ast.op in ['<', '<=', '>', '>=']:
-                    return BoolType()
-            if type(left) is FloatType and type(right) is IntType:
+                    return [BoolType(), None]
+            if type(left[0]) is FloatType and type(right[0]) is IntType:
                 if ast.op in ['+', '-', '*', '/', '=']:
-                    return FloatType()
+                    return [FloatType(), None]
                 elif ast.op in ['<', '<=', '>', '>=']:
-                    return FloatType()
+                    return [FloatType(), None]
             raise TypeMismatchInExpression(ast)
 
     def visitUnaryOp(self, ast, c):
         body = self.visit(ast.body, c)
-        if type(body) is BoolType and ast.op == '!':
-            return BoolType()
-        elif type(body) is IntType and ast.op == '-':
-            return IntType()
-        elif type(body) is FloatType and ast.op == '-':
-            return FloatType()
+        if type(body[0]) is BoolType and ast.op == '!':
+            return [BoolType(), not body[1] if body[1] is not None else None]
+        elif type(body[0]) is IntType and ast.op == '-':
+            return [IntType(), -body[1] if body[1] is not None else None]
+        elif type(body[0]) is FloatType and ast.op == '-':
+            return [FloatType(), -body[1] if body[1] is not None else None]
         raise TypeMismatchInExpression(ast)
 
     def visitIf(self, ast, c):
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
         expr = self.visit(ast.expr, c)
-        self.visit(ast.thenStmt, c)
-        if ast.elseStmt is not None:
-            self.visit(ast.elseStmt, c)
-        if type(expr) is not BoolType:
+        if type(expr[0]) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        isReturn = False
+        isBreak = False
+        [isReturn, isBreak] = self.visit(ast.thenStmt, [c[0], c[1], c[2], c[3], isReturn, isBreak])
+        if ast.elseStmt is not None:
+            isReturn1 = False
+            isBreak1 = False
+            [isReturn1, isBreak1] = self.visit(ast.elseStmt, [c[0], c[1], c[2], c[3], isReturn1, isBreak1])
+            return [isReturn and isReturn1, isBreak and isBreak1]
+        return [False, False]
 
     def visitFor(self, ast, c):
         expr1 = self.visit(ast.expr1, c)
         expr2 = self.visit(ast.expr2, c)
         expr3 = self.visit(ast.expr3, c)
-        self.visit(ast.loop, c)
-        if type(expr1) is not IntType or type(expr3) is not IntType or type(expr2) is not BoolType:
+        isReturn = False
+        isBreak = False
+        [isReturn, isBreak] = self.visit(ast.loop, [c[0], c[1], True, c[3], isReturn, isBreak])
+        #self.visit(ast.loop, c)
+        if type(expr1[0]) is not IntType or type(expr3[0]) is not IntType or type(expr2[0]) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [False, False]
 
     def visitDowhile(self, ast, c):
+        isReturn = False
+        isBreak = False
         for x in ast.sl:
             if isinstance(x, Block):
-                self.visit(x, [[[]] + c[0]] + c[1:])
+                [isReturn, isBreak] = self.visit(x, [[[]] + c[0], c[1], True, c[3], isReturn, isBreak])
+            elif isinstance(x, Expr) is False:
+                [isReturn, isBreak] = self.visit(x, [c[0], c[1], True, c[3], isReturn, isBreak])
             else:
+                if isReturn is True or isBreak is True:
+                    raise UnreachableStatement(x)
                 self.visit(x, c)
         exp = self.visit(ast.exp, c)
-        if type(exp) is not BoolType:
+        if type(exp[0]) is not BoolType:
             raise TypeMismatchInStatement(ast)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [isReturn, False]
 
     def visitBreak(self, ast, c):
-        return Break()
+        if c[2] is False:
+            raise BreakNotInLoop()
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [False, True]
 
     def visitContinue(self, ast, c):
-        return Continue()
+        if c[2] is False:
+            raise ContinueNotInLoop()
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [False, True]
 
     def visitReturn(self, ast, c):
         if ast.expr is not None:
             exp = self.visit(ast.expr, c)
             #if type(exp) != type(c[3].returnType):
-            if self.checkType(c[3].returnType, exp) is False:
+            if self.checkType(c[3].returnType, exp[0]) is False:
                 raise TypeMismatchInStatement(ast)
         elif type(c[3].returnType) is not VoidType:
             raise TypeMismatchInStatement(ast)
+        if c[4] or c[5]:
+            raise UnreachableStatement(ast)
+        return [True, False]
 
     def visitArrayType(self, ast, c):
         return ArrayType(ast.dimen, ast.eleType)
@@ -284,31 +354,13 @@ class StaticChecker(BaseVisitor,Utils):
         return BoolType()
     
     def visitIntLiteral(self,ast, c): 
-        return IntType()
+        return [IntType(), ast.value]
     
     def visitFloatLiteral(self, ast, c):
-        return FloatType()
+        return [FloatType(), ast.value]
 
     def visitStringLiteral(self, ast, c):
-        return StringType()
+        return [StringType(), ast.value]
 
     def visitBooleanLiteral(self, ast, c):
-        return BoolType()
-
-    
-    """def visitCallExpr(self, ast, c): 
-        at = [self.visit(x,(c[0],False)) for x in ast.param]
-        
-        res = self.lookup(ast.method.name,c[0],lambda x: x.name)
-        if res is None or not type(res.mtype) is MType:
-            raise Undeclared(Function(),ast.method.name)
-        elif len(res.mtype.partype) != len(at):
-            if c[1]:
-                raise TypeMismatchInStatement(ast)
-            else:
-                raise TypeMismatchInExpression(ast)
-        else:
-            return res.mtype.rettype"""
-
-
-    
+        return [BoolType(), ast.value]
