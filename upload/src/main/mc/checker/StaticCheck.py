@@ -34,7 +34,6 @@ class StaticChecker(BaseVisitor,Utils):
     Symbol("putLn",MType([],VoidType()))
     ]
             
-    
     def __init__(self,ast):
         #print(ast)
         #print(ast)
