@@ -294,8 +294,10 @@ class StaticChecker(BaseVisitor,Utils):
             isBreak1 = False
             if isinstance(ast.elseStmt, Block):
                 [isReturn1, isBreak1] = self.visit(ast.elseStmt, [[[]] + c[0], c[1], c[2], c[3], isReturn1, isBreak1])
-            else:
+            elif isinstance(ast.elseStmt, Expr) is False:
                 [isReturn1, isBreak1] = self.visit(ast.elseStmt, [c[0], c[1], c[2], c[3], isReturn1, isBreak1])
+            else:
+                self.visit(ast.elseStmt, c)
             return [isReturn and isReturn1, (isBreak and isBreak1) or (isReturn and isBreak1) or (isReturn1 and isBreak)]
         return [False, False]
 
@@ -307,8 +309,10 @@ class StaticChecker(BaseVisitor,Utils):
         isBreak = False
         if isinstance(ast.loop, Block):
             [isReturn, isBreak] = self.visit(ast.loop, [[[]] + c[0], c[1], True, c[3], isReturn, isBreak])
-        else:
+        elif isinstance(ast.loop, Expr) is False:
             [isReturn, isBreak] = self.visit(ast.loop, [c[0], c[1], True, c[3], isReturn, isBreak])
+        else:
+            self.visit(ast.loop, c)
         if type(expr1[0]) is not IntType or type(expr3[0]) is not IntType or type(expr2[0]) is not BoolType:
             raise TypeMismatchInStatement(ast)
         if c[4] or c[5]:
