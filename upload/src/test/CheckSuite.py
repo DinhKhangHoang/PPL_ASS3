@@ -5,7 +5,7 @@ from AST import *
 class CheckSuite(unittest.TestCase):
     
     def test_Redeclare_Var_001(self):
-        """Simple program: int main() {} """
+        
         input = Program([VarDecl("a", IntType()),
                         FuncDecl(Id("main"), [], VoidType(),
                             Block([])),
@@ -1044,7 +1044,7 @@ class CheckSuite(unittest.TestCase):
             7 = 8;
         }
         """
-        expect = "Not Left Value: BinaryOp(=,IntLiteral(7),IntLiteral(8))"
+        expect = "Not Left Value: IntLiteral(7)"
         self.assertTrue(TestChecker.test(input, expect, 466))
 
     def test_NotLeftValue_067(self):
@@ -1055,7 +1055,7 @@ class CheckSuite(unittest.TestCase):
             a + b = 8;
         }
         """
-        expect = "Not Left Value: BinaryOp(=,BinaryOp(+,Id(a),Id(b)),IntLiteral(8))"
+        expect = "Not Left Value: BinaryOp(+,Id(a),Id(b))"
         self.assertTrue(TestChecker.test(input, expect, 467))
 
     def test_NotLeftValue_068(self):
@@ -1069,7 +1069,7 @@ class CheckSuite(unittest.TestCase):
             return 100;
         }
         """
-        expect = "Not Left Value: BinaryOp(=,CallExpr(Id(add),[Id(a),Id(b)]),IntLiteral(8))"
+        expect = "Not Left Value: CallExpr(Id(add),[Id(a),Id(b)])"
         self.assertTrue(TestChecker.test(input, expect, 468))
 
     def test_NotLeftValue_069(self):
@@ -1084,7 +1084,7 @@ class CheckSuite(unittest.TestCase):
             return 100;
         }
         """
-        expect = "Not Left Value: BinaryOp(=,IntLiteral(4),IntLiteral(3))"
+        expect = "Not Left Value: IntLiteral(4)"
         self.assertTrue(TestChecker.test(input, expect, 469))
 
     def test_NotLeftValue_070(self):
@@ -1099,7 +1099,7 @@ class CheckSuite(unittest.TestCase):
             return 100;
         }
         """
-        expect = "Not Left Value: BinaryOp(=,BinaryOp(+,Id(b),IntLiteral(4)),BinaryOp(*,IntLiteral(3),CallExpr(Id(add),[IntLiteral(3),IntLiteral(4)])))"
+        expect = "Not Left Value: BinaryOp(+,Id(b),IntLiteral(4))"
         self.assertTrue(TestChecker.test(input, expect, 470))
 
     def test_UnreachableFunction_071(self):
@@ -1520,6 +1520,7 @@ class CheckSuite(unittest.TestCase):
             float result;
             result = c[50] * 3.4 - 20.0;
             float temp;
+            boolean check;
             if(true){
                 temp = 0;
             }
@@ -1551,5 +1552,4 @@ class CheckSuite(unittest.TestCase):
         expect = "Uninitialized Variable: x"
         self.assertTrue(TestChecker.test(input, expect, 500))
 
-    
     
