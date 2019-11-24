@@ -54,7 +54,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Redeclared Variable: b"
         self.assertTrue(TestChecker.test(input,expect,406))
 
-    def test_Redeclare_Var_007(self):
+    def test_There_is_NO_Redeclare_Var_007(self):
         input = Program([VarDecl("a", IntType()), 
                         FuncDecl(Id("main"), [], VoidType(),
                             Block([VarDecl("b", IntType()),
@@ -94,7 +94,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Redeclared Variable: c"
         self.assertTrue(TestChecker.test(input,expect,410))
 
-    def test_Redeclare_Var_011(self):
+    def test_There_is_NO_Redeclare_Var_011(self):
         input = Program([VarDecl("a", IntType()),
                         FuncDecl(Id("main"), [], VoidType(),
                             Block([VarDecl("c", IntType()),
@@ -180,7 +180,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Redeclared Variable: g"
         self.assertTrue(TestChecker.test(input,expect,416))
 
-    def test_Redeclare_Param_017(self):
+    def test_There_is_NO_Redeclare_Param_017(self):
         input = Program([VarDecl("a", IntType()),
                         FuncDecl(Id("main"), [VarDecl("g", IntType())], VoidType(),
                             Block([VarDecl("h", IntType()),
@@ -234,7 +234,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Undeclared Identifier: a"
         self.assertTrue(TestChecker.test(input, expect, 421))
     
-    def test_Undeclare_022(self):
+    def test_There_is_NO_Undeclare_022(self):
         input = """int a;
         void main(int b){
             a = 1;
@@ -257,7 +257,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Undeclared Identifier: c"
         self.assertTrue(TestChecker.test(input, expect, 423))
 
-    def test_Undeclare_024(self):
+    def test_There_is_NO_Undeclare_024(self):
         input = """int a, b;
         void main(){
             a = 1;
@@ -290,7 +290,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Undeclared Identifier: d"
         self.assertTrue(TestChecker.test(input, expect, 425))
 
-    def test_Undeclare_026(self):
+    def test_There_is_NO_Undeclare_026(self):
         input = """int a, b;
         void main(){
             a = 1;
@@ -498,7 +498,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Type Mismatch In Statement: Dowhile([Block([VarDecl(f,BoolType)]),Block([VarDecl(f,BoolType)])],Id(f))"
         self.assertTrue(TestChecker.test(input, expect, 437))
 
-    def test_TypeMissMatchInStmt_038(self):
+    def test_TypeMissMatchInExpr_038(self):
         input = """int a, b;
         void main(){
             a = 0;
@@ -653,7 +653,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Type Mismatch In Expression: BinaryOp(=,Id(f),CallExpr(Id(add),[FloatLiteral(3.5),FloatLiteral(8.9)]))"
         self.assertTrue(TestChecker.test(input, expect, 446))
 
-    def test_TypeMissMatchInExpr_047(self):
+    def test_There_is_NO_TypeMissMatchInExpr_047(self):
         input = """int a, b;
         void main(){
             float f[8];
@@ -669,7 +669,7 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 447))
 
-    def test_TypeMissMatchInExpr_048(self):
+    def test_There_is_NO_TypeMissMatchInExpr_048(self):
         input = """int a, b;
         void main(){
             float f[8];
@@ -685,7 +685,7 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 448))
 
-    def test_TypeMissMatchInExpr_049(self):
+    def test_There_is_NO_TypeMissMatchInExpr_049(self):
         input = """int a, b;
         void main(int argc[]){
             float f[8];
@@ -986,7 +986,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Break Not In Loop"
         self.assertTrue(TestChecker.test(input, expect, 463))
 
-    def test_BreakNotInLoop_064(self):
+    def test_ContinueNotInLoop_064(self):
         input = """int a, b;
         void main(int argc[]){
             float f[8];
@@ -1004,14 +1004,14 @@ class CheckSuite(unittest.TestCase):
                     if(true)
                         break;
                 }while(false);
-                break;
+                continue;
             }
         }
         """
-        expect = "Break Not In Loop"
+        expect = "Continue Not In Loop"
         self.assertTrue(TestChecker.test(input, expect, 464))
 
-    def test_BreakNotInLoop_065(self):
+    def test_ContinueNotInLoop_065(self):
         input = """int a, b;
         void main(int argc[]){
             float f[8];
@@ -1031,11 +1031,11 @@ class CheckSuite(unittest.TestCase):
                             if(true)
                                 break;
                 }while(false);
-                break;
+                continue;
             }
         }
         """
-        expect = "Break Not In Loop"
+        expect = "Continue Not In Loop"
         self.assertTrue(TestChecker.test(input, expect, 465))
 
     def test_NotLeftValue_066(self):
@@ -1149,7 +1149,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Unreachable Function: sub"
         self.assertTrue(TestChecker.test(input, expect, 473))
 
-    def test_UnreachableFunction_074(self):
+    def test_There_is_NO_UnreachableFunction_074(self):
         input = """int a, b;
         void main(int argc[]){
             a = 0;
@@ -1168,7 +1168,7 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 474))
 
-    def test_UnreachableFunction_075(self):
+    def test_There_is_NO_UnreachableFunction_075(self):
         input = """int a, b;
         void main(int argc[]){
             a = 0;
@@ -1314,7 +1314,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Unreachable Statement: BinaryOp(=,Id(a),IntLiteral(7898721))"
         self.assertTrue(TestChecker.test(input, expect, 482))
 
-    def test_UnreachableStmt_083(self):
+    def test_There_is_NO_UnreachableStmt_083(self):
         input = """int a, b;
         void main(int argc[]){
             a = 0;
@@ -1410,7 +1410,7 @@ class CheckSuite(unittest.TestCase):
         expect = "Index Out Of Range: ArrayCell(Id(c),BinaryOp(+,BinaryOp(%,BinaryOp(*,BinaryOp(/,BinaryOp(-,IntLiteral(10),IntLiteral(1)),IntLiteral(2)),IntLiteral(4)),IntLiteral(10)),IntLiteral(3)))"
         self.assertTrue(TestChecker.test(input, expect, 490))
 
-    def test_IndexOutOfRange_091(self):
+    def test_There_is_NO_IndexOutOfRange_091(self):
         input = """int a, b;
         void main(int argc[]){
             b = 10;
@@ -1421,7 +1421,7 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 491))
 
-    def test_IndexOutOfRange_092(self):
+    def test_There_is_NO_IndexOutOfRange_092(self):
         input = """int a, b;
         void main(int argc[]){
             b = 10;
@@ -1432,7 +1432,7 @@ class CheckSuite(unittest.TestCase):
         expect = ""
         self.assertTrue(TestChecker.test(input, expect, 492))
 
-    def test_IndexOutOfRange_093(self):
+    def test_There_is_NO_IndexOutOfRange_093(self):
         input = """int a, b;
         void main(int argc[]){
             b = 10;
